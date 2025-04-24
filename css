@@ -1,0 +1,72 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.login-container {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.login-options button {
+    padding: 10px;
+    margin: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.chat-container, .groups-container, .group-chat-container {
+    width: 80%;
+    margin: 50px auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chat-header, .group-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-footer, .group-chat-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#messageInput, #groupMessageInput {
+    width: 70%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+}
+
+#groupList {
+    margin-top: 20px;
+}
+
+.group-chat-body {
+    height: 300px;
+    overflow-y: scroll;
+    margin-bottom: 20px;
+}
+
+img {
+    max-width: 200px;
+    margin-top: 10px;
+}
