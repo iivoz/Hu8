@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تطبيق الدردشة</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #loginSection, #createGroupSection, #groupListSection, #groupChatSection {
+      width: 300px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      margin: 10px;
+    }
+
+    input[type="text"], input[type="file"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #groupList li {
+      cursor: pointer;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin: 5px 0;
+      border-radius: 5px;
+      background-color: #f0f0f0;
+    }
+
+    #groupList li:hover {
+      background-color: #dcdcdc;
+    }
+
+    .message {
+      padding: 10px;
+      background-color: #e3e3e3;
+      border-radius: 10px;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- تسجيل الدخول -->
+  <div id="loginSection">
+    <h2>تسجيل الدخول</h2>
+    <input type="text" id="username" placeholder="اسم المستخدم">
+    <input type="file" id="avatar" accept="image/*">
+    <button onclick="login()">دخول</button>
+  </div>
+
+  <!-- إنشاء مجموعة جديدة -->
+  <div id="createGroupSection" style="display: none;">
+    <h2>إنشاء مجموعة جديدة</h2>
+    <input type="text" id="groupName" placeholder="اسم المجموعة">
+    <button onclick="createGroup()">إنشاء مجموعة</button>
+  </div>
+
+  <!-- عرض المجموعات -->
+  <div id="groupListSection" style="display: none;">
+    <h2>المجموعات</h2>
+    <ul id="groupList"></ul>
+  </div>
+
+  <!-- الدردشة داخل المجموعة -->
+  <div id="groupChatSection" style="display: none;">
+    <h3 id="groupNameDisplay"></h3>
+    <div id="groupMessages"></div>
+    <textarea id="groupMessageInput" placeholder="اكتب رسالتك هنا..."></textarea>
+    <button onclick="sendMessage()">إرسال</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js"></script>
+  
+  <script>
+    // إعداد Firebase
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_FIREBASE_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_FIREBASE_PROJECT_ID",
+      storageBucket: "YOUR_FIREBASE_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
+      appId: "YOUR_FIREBASE_APP_ID",
+      measurementId: "YOUR_FIREBASE_MEASUREMENT_ID"
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let username = '';
+    let avatar = '';
+    let groups = [];
+    let currentGroup = null;
+
+    // تسجيل الدخول باستخدام حساب جوجل
+    function login() {
+      username = document.getElementById("username").value;
+      const avatarInput = document.getElementById("avatar");
+      if (avatarInput.files.length > 0) {
+        avatar = URL.createObjectURL(avatarInput.files[0]);
+      }
+      
+      if (username.trim() !== '') {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("createGroupSection").style.display = "block";
+      } else {
+        alert("الرجاء إدخال اسم المستخدم");
+      }
+    }
+
+    // إنشاء مجموعة جديدة
+    function createGroup() {
+      const groupName = document.getElementById("groupName").value.trim();
+      if (groupName) {
+        const newGroup = {
+          name: groupName,
+          messages: []
+        };
+        groups.push(newGroup);
+        saveGroupToFirestore(newGroup);
+        document.getElementById("groupName").value = '';
+        renderGroups();
+      }
+    }
+
+    // حفظ المجموعة في Firestore
+    function saveGroupToFirestore(group) {
+      db.collection("groups").add({
+        name: group.name,
+        messages: []
+      }).then(() => {
+        console.log("تم إنشاء المجموعة بنجاح!");
+      }).catch((error) => {
+        console.error("خطأ في إنشاء المجموعة: ", error);
+      });
+    }
+
+    // عرض المجموعات
+    function renderGroups() {
+      const groupList = document.getElementById("groupList");
+      groupList.innerHTML = '';
+      groups.forEach((group, index) => {
+        const li = document.createElement("li");
+        li.textContent = group.name;
+        li.onclick = function() {
+          selectGroup(index);
+        };
+        groupList.appendChild(li);
+      });
+      document.getElementById("groupListSection").style.display = "block";
+    }
+
+    // اختيار مجموعة للدردشة
+    function selectGroup(index) {
+      currentGroup = groups[index];
+      document.getElementById("groupNameDisplay").textContent = currentGroup.name;
+      document.getElementById("groupMessages").innerHTML = '';
+      renderMessages();
+      document.getElementById("groupChatSection").style.display = "block";
+    }
+
+    // عرض الرسائل في المجموعة
+    function renderMessages() {
+      const groupMessages = document.getElementById("groupMessages");
+      groupMessages.innerHTML = '';
+      currentGroup.messages.forEach((message) => {
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message");
+        messageDiv.textContent = message;
+        groupMessages.appendChild(messageDiv);
+      });
+    }
+
+    // إرسال رسالة إلى المجموعة
+    function sendMessage() {
+      const message = document.getElementById("groupMessageInput").value.trim();
+      if (message) {
+        currentGroup.messages.push(message);
+        document.getElementById("groupMessageInput").value = '';
+        renderMessages();
+      }
+    }
+  </script>
+
+</body>
+</html>
